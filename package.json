@@ -1,5 +1,11 @@
 {
-  "dependencies": {
-    "xlsx": "^0.11.15"
-  }
+    "scripts": {
+        "lint": "eslint .; exit 0"
+    },
+    "dependencies": {
+        "xlsx": "^0.11.15"
+    },
+    "devDependencies": {
+        "eslint": "^4.14.0"
+    }
 }
