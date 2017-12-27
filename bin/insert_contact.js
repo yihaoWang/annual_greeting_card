@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import XLSX from 'xlsx';
-import Contact from './models/Contact';
+import Contact from '../models/Contact';
 
 // Constant
 const FILE_NAME = 'test.xlsx';
