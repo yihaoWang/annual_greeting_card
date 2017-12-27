@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
-const XLSX = require('xlsx');
+import XLSX from 'xlsx';
+import Contact from './models/Contact';
 
 // Constant
 const FILE_NAME = 'test.xlsx';
@@ -70,7 +71,7 @@ function parseRow(row, indexLookup) {
         result[key] = row[index];
     }
 
-    return result;
+    return new Contact(result);
 }
 
 function parseNormalSheet(ws) {
