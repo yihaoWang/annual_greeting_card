@@ -6,10 +6,12 @@ import Contact from '../models/Contact';
 const FILE_NAME = 'test.xlsx';
 const VALID_SHEET_NAME = new Set(['捐款人', 'MKT']);
 const HEADER_LOOKUP = {
-    '中文全名': 'name',
-    'nickname': 'nickname',
-    '地址': 'address',
     'email': 'email',
+    '中文全名': 'name',
+    '地址': 'address',
+    '身份別': 'identity',
+    'nickname': 'nickname',
+    '單位': 'unit',
     '紙本賀卡': 'paperCard',
     '年度報告': 'annualReport',
     '年度收據': 'annualReceipt',
@@ -71,7 +73,7 @@ function parseRow(row, indexLookup) {
         result[key] = row[index];
     }
 
-    return new Contact(result);
+    return Contact.fromObject(result);
 }
 
 function parseNormalSheet(ws) {
@@ -83,15 +85,45 @@ function parseNormalSheet(ws) {
     for (var i = 0; i < numRow; i++) {
         const row = rows[i];
 
-        indexLookup = (indexLookup || getIndexFromHeader(row));
-        if (!indexLookup) {
-            continue;
+        if (indexLookup) {
+            result.push(parseRow(row, indexLookup));
         }
 
-        result.push(parseRow(row, indexLookup));
+        indexLookup = (indexLookup || getIndexFromHeader(row));
     }
 
     return result;
+}
+
+function mergeByEmail(rows) {
+    const numRows = rows.length;
+    let emailLookup = {},
+        noEmailRows = [];
+
+    for (var i = 0; i < numRows; i++) {
+        const row = rows[i];
+        const email = row.email;
+
+        if (!email) {
+            // Collect no email cells
+            noEmailRows.push(row);
+
+            continue;
+        }
+
+        const previousRow = emailLookup[email];
+
+        if (previousRow) {
+            emailLookup[email] = previousRow.merge(row);
+        } else {
+            emailLookup[email] = row;
+        }
+    }
+
+    return [
+        ...noEmailRows,
+        ...Object.values(emailLookup),
+    ];
 }
 
 function parseSheets(sheets) {
@@ -112,6 +144,6 @@ function parseSheets(sheets) {
 }
 
 const wb = XLSX.readFile(FILE_NAME);
-const rawData = parseSheets(wb.Sheets);
+const result = mergeByEmail(parseSheets(wb.Sheets));
 
-console.log(rawData);
+console.log(result);
