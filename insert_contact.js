@@ -3,7 +3,7 @@ const XLSX = require('xlsx');
 
 // Constant
 const FILE_NAME = 'test.xlsx';
-const VALID_SHEET_NAME = new Set(['捐款人']);
+const VALID_SHEET_NAME = new Set(['捐款人', 'MKT']);
 const HEADER_LOOKUP = {
     '中文全名': 'name',
     'nickname': 'nickname',
@@ -73,7 +73,7 @@ function parseRow(row, indexLookup) {
     return result;
 }
 
-function parseSheet(ws) {
+function parseNormalSheet(ws) {
     const rows = sheet2arr(ws);
     const numRow = rows.length;
     let indexLookup,
@@ -82,8 +82,7 @@ function parseSheet(ws) {
     for (var i = 0; i < numRow; i++) {
         const row = rows[i];
 
-        indexLookup = indexLookup || getIndexFromHeader(row);
-
+        indexLookup = (indexLookup || getIndexFromHeader(row));
         if (!indexLookup) {
             continue;
         }
@@ -94,14 +93,24 @@ function parseSheet(ws) {
     return result;
 }
 
-const wb = XLSX.readFile(FILE_NAME);
+function parseSheets(sheets) {
+    let rawData = [];
 
-for (var sheetName in wb.Sheets) {
-    if (!VALID_SHEET_NAME.has(sheetName)) {
-        continue;
+    for (var sheetName in sheets) {
+        if (!VALID_SHEET_NAME.has(sheetName)) {
+            continue;
+        }
+
+        rawData = [
+            ...rawData,
+            ...parseNormalSheet(wb.Sheets[sheetName])
+        ];
     }
 
-    const result = parseSheet(wb.Sheets[sheetName]);
-
-    console.log(result);
+    return rawData;
 }
+
+const wb = XLSX.readFile(FILE_NAME);
+const rawData = parseSheets(wb.Sheets);
+
+console.log(rawData);
