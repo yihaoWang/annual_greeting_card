@@ -95,7 +95,7 @@ function parseNormalSheet(ws) {
     return result;
 }
 
-function mergeByEmail(rows) {
+function mergeByEmailAndName(rows) {
     const numRows = rows.length;
     let emailLookup = {},
         noEmailRows = [];
@@ -103,20 +103,22 @@ function mergeByEmail(rows) {
     for (var i = 0; i < numRows; i++) {
         const row = rows[i];
         const email = row.email;
+        const name = row.name;
 
-        if (!email) {
+        if (!email || !name) {
             // Collect no email cells
             noEmailRows.push(row);
 
             continue;
         }
 
-        const previousRow = emailLookup[email];
+        const key = `${email}/${name}`;
+        const previousRow = emailLookup[key];
 
         if (previousRow) {
-            emailLookup[email] = previousRow.merge(row);
+            emailLookup[key] = previousRow.merge(row);
         } else {
-            emailLookup[email] = row;
+            emailLookup[key] = row;
         }
     }
 
@@ -142,8 +144,7 @@ function mergeByNameAndAddress(rows) {
             continue;
         }
 
-        let mergedRowIndex,
-            rowIndex;
+        let mergedRowIndex;
         for (let j = 0; j < numNameAddress; j++) {
             mergedRowIndex = nameAddressLookup[nameAddressList[j]];
 
@@ -151,21 +152,24 @@ function mergeByNameAndAddress(rows) {
                 // merge to previous row
                 const previousRow = result[mergedRowIndex];
 
-                rowIndex = mergedRowIndex;
-                result[mergedRowIndex] = previousRow.merge(row);
+                if ((previousRow.email === null) || (row.email === null)) {
+                    result[mergedRowIndex] = previousRow.merge(row);
+                    console.log(result[mergedRowIndex]);
+                }
+
                 break;
             }
         }
 
         if (mergedRowIndex === undefined) {
             // create new row
-            rowIndex = result.length;
-            result.push(row);
-        }
+            const currentIndex = result.length;
 
-        // update nameAddressLookup
-        for (let j = 0; j < numNameAddress; j++) {
-            nameAddressLookup[nameAddressList[j]] = rowIndex;
+            result.push(row);
+            // update nameAddressLookup
+            for (let j = 0; j < numNameAddress; j++) {
+                nameAddressLookup[nameAddressList[j]] = currentIndex;
+            }
         }
     }
 
@@ -190,6 +194,6 @@ function parseSheets(sheets) {
 }
 
 const wb = XLSX.readFile(FILE_NAME);
-const result = mergeByNameAndAddress(mergeByEmail(parseSheets(wb.Sheets)));
+const result = mergeByNameAndAddress(mergeByEmailAndName(parseSheets(wb.Sheets)));
 
 console.log(result);

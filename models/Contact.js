@@ -6,7 +6,7 @@ export default class Contact {
 
     constructor() {
         this.email = null;
-        this.names = new Set();
+        this.name = null;
         this.addresses = new Set();
         this.identities = new Set();
         this.nicknames = new Set();
@@ -21,7 +21,7 @@ export default class Contact {
         let result = new Contact();
 
         result.setEmail(object.email);
-        result.addNames([object.name]);
+        result.setName(object.name);
         result.addAddresses([object.address]);
         result.addIdentities([object.identity]);
         result.addNicknames([object.nickname]);
@@ -38,11 +38,8 @@ export default class Contact {
         this.email = (trim(email) || null);
     }
 
-    addNames(names) {
-        this.names = new Set([
-            ...this.names,
-            ...compact(names),
-        ]);
+    setName(name) {
+        this.name = (trim(name) || null);
     }
 
     addAddresses(addresses) {
@@ -93,12 +90,15 @@ export default class Contact {
     }
 
     get nameAddressList() {
+        const name = this.name;
         let result = [];
 
-        for (let name of this.names) {
-            for (let address of this.addresses) {
-                result.push(`${name}/${address}`);
-            }
+        if (!name) {
+            return result;
+        }
+
+        for (let address of this.addresses) {
+            result.push(`${this.name}/${address}`);
         }
 
         return result;
@@ -111,7 +111,10 @@ export default class Contact {
             result.setEmail(other.email);
         }
 
-        result.addNames([...other.names]);
+        if (!result.name) {
+            result.setName(other.name);
+        }
+
         result.addAddresses([...other.addresses]);
         result.addIdentities([...other.identities]);
         result.addNicknames([...other.nicknames]);
@@ -127,7 +130,7 @@ export default class Contact {
     toJSON() {
         return JSON.stringify({
             email: this.email,
-            names: [...this.names],
+            name: this.name,
             addresses: [...this.addresses],
             identities: [...this.identities],
             nicknames: [...this.nicknames],
