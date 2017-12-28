@@ -86,7 +86,12 @@ function parseNormalSheet(ws) {
         const row = rows[i];
 
         if (indexLookup) {
-            result.push(parseRow(row, indexLookup));
+            const contact = parseRow(row, indexLookup);
+
+            // FIXME Filter invalid data
+            if (contact.name !== '地址貼上的名字') {
+                result.push(parseRow(row, indexLookup));
+            }
         }
 
         indexLookup = (indexLookup || getIndexFromHeader(row));
