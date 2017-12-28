@@ -126,6 +126,52 @@ function mergeByEmail(rows) {
     ];
 }
 
+function mergeByNameAndAddress(rows) {
+    const numRows = rows.length;
+    let result = [];
+    let nameAddressLookup = {};
+
+    for (var i = 0; i < numRows; i++) {
+        const row = rows[i];
+        const nameAddressList = row.nameAddressList;
+        const numNameAddress = nameAddressList.length;
+
+        if (numNameAddress === 0) {
+            result.push(row);
+
+            continue;
+        }
+
+        let mergedRowIndex,
+            rowIndex;
+        for (let j = 0; j < numNameAddress; j++) {
+            mergedRowIndex = nameAddressLookup[nameAddressList[j]];
+
+            if (mergedRowIndex !== undefined) {
+                // merge to previous row
+                const previousRow = result[mergedRowIndex];
+
+                rowIndex = mergedRowIndex;
+                result[mergedRowIndex] = previousRow.merge(row);
+                break;
+            }
+        }
+
+        if (mergedRowIndex === undefined) {
+            // create new row
+            rowIndex = result.length;
+            result.push(row);
+        }
+
+        // update nameAddressLookup
+        for (let j = 0; j < numNameAddress; j++) {
+            nameAddressLookup[nameAddressList[j]] = rowIndex;
+        }
+    }
+
+    return result;
+}
+
 function parseSheets(sheets) {
     let rawData = [];
 
@@ -144,6 +190,6 @@ function parseSheets(sheets) {
 }
 
 const wb = XLSX.readFile(FILE_NAME);
-const result = mergeByEmail(parseSheets(wb.Sheets));
+const result = mergeByNameAndAddress(mergeByEmail(parseSheets(wb.Sheets)));
 
 console.log(result);

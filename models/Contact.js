@@ -92,6 +92,18 @@ export default class Contact {
         this.annulReceipt = (this.annulReceipt || annulReceipt || false);
     }
 
+    get nameAddressList() {
+        let result = [];
+
+        for (let name of this.names) {
+            for (let address of this.addresses) {
+                result.push(`${name}/${address}`);
+            }
+        }
+
+        return result;
+    }
+
     merge(other) {
         let result = clone(this);
 
@@ -110,5 +122,20 @@ export default class Contact {
         result.addAnnulReceipt(other.annulReceipt);
 
         return result;
+    }
+
+    toJSON() {
+        return JSON.stringify({
+            email: this.email,
+            names: [...this.names],
+            addresses: [...this.addresses],
+            identities: [...this.identities],
+            nicknames: [...this.nicknames],
+            units: [...this.units],
+            departments: [...this.departments],
+            paperCard: this.paperCard,
+            annulReport: this.annulReport,
+            annulReceipt: this.annulReceipt,
+        });
     }
 }
