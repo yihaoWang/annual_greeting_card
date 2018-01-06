@@ -110,7 +110,7 @@ function mergeByEmailAndName(rows) {
         const email = row.email;
         const name = row.name;
 
-        if (!email || !name) {
+        if (!email && !name) {
             // Collect no email cells
             noEmailRows.push(row);
 
@@ -159,7 +159,6 @@ function mergeByNameAndAddress(rows) {
 
                 if ((previousRow.email === null) || (row.email === null)) {
                     result[mergedRowIndex] = previousRow.merge(row);
-                    console.log(result[mergedRowIndex]);
                 }
 
                 break;
@@ -200,5 +199,28 @@ function parseSheets(sheets) {
 
 const wb = XLSX.readFile(FILE_NAME);
 const result = mergeByNameAndAddress(mergeByEmailAndName(parseSheets(wb.Sheets)));
+const outputWS = XLSX.utils.json_to_sheet(
+    result.map((row) => (
+        row.toJSON()
+    )),
+    { header: [
+        'email',
+        'name',
+        'addresses',
+        'identities',
+        'nicknames',
+        'units',
+        'departments',
+        'paperCard',
+        'annulReport',
+        'annulReceipt'
+    ]}
+);
+const outputWB = {
+    SheetNames: ['Sheet1'],
+    Sheets: {
+        Sheet1: outputWS
+    }
+};
 
-console.log(result);
+XLSX.writeFile(outputWB, './output.xlsx');

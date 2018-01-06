@@ -2,6 +2,14 @@ import clone from 'lodash/clone';
 import trim from 'lodash/trim';
 import compact from 'lodash/compact';
 
+function joinFromSet(set, separator = ' / ') {
+    if (set.size === 0) {
+        return '';
+    }
+
+    return [...set].join(separator);
+}
+
 export default class Contact {
 
     constructor() {
@@ -128,17 +136,17 @@ export default class Contact {
     }
 
     toJSON() {
-        return JSON.stringify({
+        return {
             email: this.email,
             name: this.name,
-            addresses: [...this.addresses],
-            identities: [...this.identities],
-            nicknames: [...this.nicknames],
-            units: [...this.units],
-            departments: [...this.departments],
+            addresses: joinFromSet(this.addresses),
+            identities: joinFromSet(this.identities),
+            nicknames: joinFromSet(this.nicknames),
+            units: joinFromSet(this.units),
+            departments: joinFromSet(this.departments),
             paperCard: this.paperCard,
             annulReport: this.annulReport,
             annulReceipt: this.annulReceipt,
-        });
+        };
     }
 }
