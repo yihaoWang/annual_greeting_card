@@ -85,11 +85,10 @@ function parseNormalSheet(ws) {
         const row = rows[i];
 
         if (indexLookup) {
-            const contact = parseRow(row, indexLookup);
-
-            // FIXME Filter invalid data
-            if (contact.name !== '地址貼上的名字') {
+            try {
                 result.push(parseRow(row, indexLookup));
+            } catch(err) {
+                console.log(`Invalid: ${JSON.stringify(row)}`);
             }
         }
 
@@ -99,84 +98,69 @@ function parseNormalSheet(ws) {
     return result;
 }
 
-function mergeByEmailAndName(rows) {
+function mergeRows(rows) {
     const numRows = rows.length;
-    let emailLookup = {},
-        noEmailRows = [];
+    let nameLookup = {},
+        noNameRows = [];
 
-    for (var i = 0; i < numRows; i++) {
+    for (let i = 0; i < numRows; i++) {
         const row = rows[i];
-        const email = row.email;
         const name = row.name;
+        let matchRows = nameLookup[name];
 
-        if (!email && !name) {
-            // Collect no email cells
-            noEmailRows.push(row);
+        if (!name) {
+            noNameRows.push(row);
+
+            continue;
+        }
+        if (!matchRows) {
+            nameLookup[name] = [row];
 
             continue;
         }
 
-        const key = `${email}/${name}`;
-        const previousRow = emailLookup[key];
+        const email = row.email;
+        const address = row.address;
+        const numMatchRows = matchRows.length;
 
-        if (previousRow) {
-            emailLookup[key] = previousRow.merge(row);
-        } else {
-            emailLookup[key] = row;
-        }
-    }
+        let mergedIndex = numMatchRows;
+        for (let j = 0; j < numMatchRows; j++) {
+            const matchRow = matchRows[j];
+            const matchRowEmail = matchRow.email;
+            const matchRowAddress = matchRow.address;
 
-    return [
-        ...noEmailRows,
-        ...Object.values(emailLookup),
-    ];
-}
+            if (
+                (email ===  matchRowEmail) &&
+                (address === matchRowAddress)
+            ) {
+                mergedIndex = j;
 
-function mergeByNameAndAddress(rows) {
-    const numRows = rows.length;
-    let result = [];
-    let nameAddressLookup = {};
+                break;
+            } else if (
+                (email === matchRowEmail) &&
+                (address !== matchRowAddress)
+                // handle ER
+            ) {
+                mergedIndex = j;
 
-    for (var i = 0; i < numRows; i++) {
-        const row = rows[i];
-        const nameAddressList = row.nameAddressList;
-        const numNameAddress = nameAddressList.length;
-
-        if (numNameAddress === 0) {
-            result.push(row);
-
-            continue;
-        }
-
-        let mergedRowIndex;
-        for (let j = 0; j < numNameAddress; j++) {
-            mergedRowIndex = nameAddressLookup[nameAddressList[j]];
-
-            if (mergedRowIndex !== undefined) {
-                // merge to previous row
-                const previousRow = result[mergedRowIndex];
-
-                if ((previousRow.email === null) || (row.email === null)) {
-                    result[mergedRowIndex] = previousRow.merge(row);
-                }
+                break;
+            } else if (
+                (!email || !matchRowEmail) &&
+                (address === matchRowAddress)
+            ) {
+                mergedIndex = j;
 
                 break;
             }
         }
 
-        if (mergedRowIndex === undefined) {
-            // create new row
-            const currentIndex = result.length;
+        const mergedRow = matchRows[mergedIndex];
 
-            result.push(row);
-            // update nameAddressLookup
-            for (let j = 0; j < numNameAddress; j++) {
-                nameAddressLookup[nameAddressList[j]] = currentIndex;
-            }
-        }
+        matchRows[mergedIndex] = mergedRow ? mergedRow.merge(row) : row;
+        nameLookup[name] = matchRows;
     }
 
-    return result;
+    return noNameRows.concat.apply(noNameRows, Object.values(nameLookup));
 }
 
 function parseSheets(sheets) {
@@ -193,7 +177,8 @@ function parseSheets(sheets) {
 }
 
 const wb = XLSX.readFile(process.argv[2]);
-const result = mergeByNameAndAddress(mergeByEmailAndName(parseSheets(wb.Sheets)));
+const result = mergeRows(parseSheets(wb.Sheets));
+
 const outputWS = XLSX.utils.json_to_sheet(
     result.map((row) => (
         row.toJSON()

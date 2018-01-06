@@ -2,7 +2,9 @@ import clone from 'lodash/clone';
 import trim from 'lodash/trim';
 import compact from 'lodash/compact';
 
-function joinFromSet(set, separator = ' / ') {
+const SEPARATOR = '/';
+
+function joinFromSet(set, separator = SEPARATOR) {
     if (set.size === 0) {
         return '';
     }
@@ -26,12 +28,24 @@ export default class Contact {
     }
 
     static fromObject(object) {
-        let result = new Contact();
+        const email = object.email;
+        const name = object.name;
+        const address = object.address;
 
-        result.setEmail(object.email);
-        result.setName(object.name);
-        result.addAddresses([object.address]);
-        result.addIdentities([object.identity]);
+        if (
+            ((email === undefined) && (name === '地址貼上的名字')) ||
+            ((email === undefined) && (name === undefined) && (address === undefined))
+        ) {
+            throw new Error('Invalid row');
+        }
+
+        const result = new Contact();
+        const identity = object.identity;
+
+        result.setEmail(email);
+        result.setName(name);
+        result.addAddresses([address]);
+        result.addIdentities(identity ? identity.split(SEPARATOR) : []);
         result.addNicknames([object.nickname]);
         result.addUnits([object.unit]);
         result.addDepartments([object.department]);
