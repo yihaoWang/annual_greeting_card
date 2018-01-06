@@ -3,15 +3,14 @@ import XLSX from 'xlsx';
 import Contact from '../models/Contact';
 
 // Constant
-const FILE_NAME = 'test.xlsx';
-const VALID_SHEET_NAME = new Set(['捐款人', 'MKT']);
 const HEADER_LOOKUP = {
-    'email': 'email',
-    '中文全名': 'name',
-    '地址': 'address',
     '身份別': 'identity',
+    '中文全名': 'name',
     'nickname': 'nickname',
-    '單位': 'unit',
+    '單位名稱': 'unit',
+    '部門名稱': 'department',
+    'email': 'email',
+    '地址': 'address',
     '紙本賀卡': 'paperCard',
     '年度報告': 'annualReport',
     '年度收據': 'annualReceipt',
@@ -184,10 +183,6 @@ function parseSheets(sheets) {
     let rawData = [];
 
     for (var sheetName in sheets) {
-        if (!VALID_SHEET_NAME.has(sheetName)) {
-            continue;
-        }
-
         rawData = [
             ...rawData,
             ...parseNormalSheet(wb.Sheets[sheetName])
@@ -197,29 +192,29 @@ function parseSheets(sheets) {
     return rawData;
 }
 
-const wb = XLSX.readFile(FILE_NAME);
+const wb = XLSX.readFile(process.argv[2]);
 const result = mergeByNameAndAddress(mergeByEmailAndName(parseSheets(wb.Sheets)));
 const outputWS = XLSX.utils.json_to_sheet(
     result.map((row) => (
         row.toJSON()
     )),
     { header: [
-        'email',
-        'name',
-        'addresses',
         'identities',
+        'name',
         'nicknames',
         'units',
         'departments',
+        'email',
+        'addresses',
         'paperCard',
         'annulReport',
         'annulReceipt'
     ]}
 );
 const outputWB = {
-    SheetNames: ['Sheet1'],
+    SheetNames: ['all'],
     Sheets: {
-        Sheet1: outputWS
+        all: outputWS
     }
 };
 

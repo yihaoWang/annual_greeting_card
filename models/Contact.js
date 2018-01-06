@@ -86,15 +86,27 @@ export default class Contact {
     }
 
     addPaperCard(paperCard) {
-        this.paperCard = (this.paperCard || paperCard || false);
+        this.paperCard = (
+            this.paperCard ||
+            (paperCard === true) || (paperCard === 'Y') ||
+            false
+        );
     }
 
     addAnnulReport(annulReport) {
-        this.annulReport = (this.annulReport || annulReport || false);
+        this.annulReport = (
+            this.annulReport ||
+            (annulReport === true) || (annulReport === 'Y') ||
+            false
+        );
     }
 
     addAnnulReceipt(annulReceipt) {
-        this.annulReceipt = (this.annulReceipt || annulReceipt || false);
+        this.annulReceipt = (
+            this.annulReceipt ||
+            (annulReceipt === true) || (annulReceipt === 'Y') ||
+            false
+        );
     }
 
     get nameAddressList() {
@@ -144,9 +156,9 @@ export default class Contact {
             nicknames: joinFromSet(this.nicknames),
             units: joinFromSet(this.units),
             departments: joinFromSet(this.departments),
-            paperCard: this.paperCard,
-            annulReport: this.annulReport,
-            annulReceipt: this.annulReceipt,
+            paperCard: this.paperCard ? 'Y' : 'N',
+            annulReport: this.annulReport ? 'Y' : 'N',
+            annulReceipt: this.annulReceipt ? 'Y' : 'N',
         };
     }
 }
