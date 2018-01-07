@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import fs from 'fs';
 import XLSX from 'xlsx';
 import Contact from '../models/Contact';
 
@@ -15,6 +16,8 @@ const HEADER_LOOKUP = {
     '年度報告': 'annualReport',
     '年度收據': 'annualReceipt',
 };
+
+let logs = [];
 
 function sheet2arr(sheet) {
     var result = [];
@@ -90,7 +93,7 @@ function parseSheet(ws, isEr) {
             try {
                 result.push(parseRow(row, indexLookup, isEr));
             } catch(err) {
-                console.log(`Invalid: ${JSON.stringify(row)}`);
+                logs.push(`Invalid row: ${JSON.stringify(row)}`);
             }
         }
 
@@ -126,7 +129,8 @@ function mergeRows(rows) {
         const er = row.er;
         const numMatchRows = matchRows.length;
 
-        let mergedIndex = numMatchRows;
+        let mergedIndex = numMatchRows,
+            mergeReason;
         for (let j = 0; j < numMatchRows; j++) {
             const matchRow = matchRows[j];
             const matchRowEmail = matchRow.email;
@@ -138,6 +142,7 @@ function mergeRows(rows) {
                 (matchRowAddresses.has(address))
             ) {
                 mergedIndex = j;
+                mergeReason = 'Merge rows by name, eamil and address';
 
                 break;
             } else if (
@@ -146,6 +151,7 @@ function mergeRows(rows) {
                 (!er && !matchRowEr)
             ) {
                 mergedIndex = j;
+                mergeReason = 'Merge rows by name and email';
 
                 break;
             } else if (
@@ -153,6 +159,7 @@ function mergeRows(rows) {
                 (matchRowAddresses.has(address))
             ) {
                 mergedIndex = j;
+                mergeReason = 'Merge rows by name and address';
 
                 break;
             }
@@ -160,7 +167,13 @@ function mergeRows(rows) {
 
         const mergedRow = matchRows[mergedIndex];
 
-        matchRows[mergedIndex] = mergedRow ? mergedRow.merge(row) : row;
+        if (mergedRow) {
+            logs.push(`${mergeReason}: ${JSON.stringify(row.toJSON())} ${JSON.stringify(mergedRow.toJSON())}`);
+            matchRows[mergedIndex] = mergedRow.merge(row);
+        } else {
+            matchRows[mergedIndex] = row;
+        }
+
         nameLookup[name] = matchRows;
     }
 
@@ -168,43 +181,56 @@ function mergeRows(rows) {
 }
 
 function parseSheets(sheets) {
-    let rawData = [];
+    let result = [];
 
     for (var sheetName in sheets) {
-        rawData = [
-            ...rawData,
-            ...parseSheet(wb.Sheets[sheetName], (sheetName === 'ER'))
-        ];
+        const rawData = parseSheet(wb.Sheets[sheetName], (sheetName === 'ER'));
+
+        result = result.concat(rawData);
+        console.log(`Find ${rawData.length} valid rows from ${sheetName}`);
     }
 
-    return rawData;
+
+    return result;
+}
+
+function generateOutput(rows, outputName) {
+    const outputWS = XLSX.utils.json_to_sheet(
+        rows.map((row) => (
+            row.toJSON()
+        )),
+        { header: [
+            'identities',
+            'email',
+            'name',
+            'nicknames',
+            'addresses',
+            'units',
+            'departments',
+            'paperCard',
+            'annulReport',
+            'annulReceipt'
+        ]}
+    );
+    const outputWB = {
+        SheetNames: ['all'],
+        Sheets: {
+            all: outputWS
+        }
+    };
+
+    XLSX.writeFile(outputWB, outputName);
+}
+
+function writeLogs(logs) {
+    fs.open('log.txt', 'w', (err, fd) => {
+        fs.writeSync(fd, logs.join('\n'));
+        fs.close(fd);
+    });
 }
 
 const wb = XLSX.readFile(process.argv[2]);
 const result = mergeRows(parseSheets(wb.Sheets));
 
-const outputWS = XLSX.utils.json_to_sheet(
-    result.map((row) => (
-        row.toJSON()
-    )),
-    { header: [
-        'identities',
-        'name',
-        'nicknames',
-        'units',
-        'departments',
-        'email',
-        'addresses',
-        'paperCard',
-        'annulReport',
-        'annulReceipt'
-    ]}
-);
-const outputWB = {
-    SheetNames: ['all'],
-    Sheets: {
-        all: outputWS
-    }
-};
-
-XLSX.writeFile(outputWB, './output.xlsx');
+generateOutput(result, process.argv[3] || './output.xlsx');
+writeLogs(logs);
