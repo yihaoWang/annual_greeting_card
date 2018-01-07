@@ -63,7 +63,7 @@ function getIndexFromHeader(row) {
     return result;
 }
 
-function parseRow(row, indexLookup) {
+function parseRow(row, indexLookup, isEr = false) {
     let result = {};
 
     for (var key in indexLookup) {
@@ -72,10 +72,12 @@ function parseRow(row, indexLookup) {
         result[key] = row[index];
     }
 
+    result.er = isEr;
+
     return Contact.fromObject(result);
 }
 
-function parseNormalSheet(ws) {
+function parseSheet(ws, isEr) {
     const rows = sheet2arr(ws);
     const numRow = rows.length;
     let indexLookup,
@@ -86,7 +88,7 @@ function parseNormalSheet(ws) {
 
         if (indexLookup) {
             try {
-                result.push(parseRow(row, indexLookup));
+                result.push(parseRow(row, indexLookup, isEr));
             } catch(err) {
                 console.log(`Invalid: ${JSON.stringify(row)}`);
             }
@@ -120,33 +122,35 @@ function mergeRows(rows) {
         }
 
         const email = row.email;
-        const address = row.address;
+        const address = (row.addresses.size === 0) ? null : [...row.addresses][0];
+        const er = row.er;
         const numMatchRows = matchRows.length;
 
         let mergedIndex = numMatchRows;
         for (let j = 0; j < numMatchRows; j++) {
             const matchRow = matchRows[j];
             const matchRowEmail = matchRow.email;
-            const matchRowAddress = matchRow.address;
+            const matchRowAddresses = matchRow.addresses;
+            const matchRowEr = matchRow.er;
 
             if (
                 (email ===  matchRowEmail) &&
-                (address === matchRowAddress)
+                (matchRowAddresses.has(address))
             ) {
                 mergedIndex = j;
 
                 break;
             } else if (
                 (email === matchRowEmail) &&
-                (address !== matchRowAddress)
-                // handle ER
+                (!matchRowAddresses.has(address)) &&
+                (!er && !matchRowEr)
             ) {
                 mergedIndex = j;
 
                 break;
             } else if (
                 (!email || !matchRowEmail) &&
-                (address === matchRowAddress)
+                (matchRowAddresses.has(address))
             ) {
                 mergedIndex = j;
 
@@ -169,7 +173,7 @@ function parseSheets(sheets) {
     for (var sheetName in sheets) {
         rawData = [
             ...rawData,
-            ...parseNormalSheet(wb.Sheets[sheetName])
+            ...parseSheet(wb.Sheets[sheetName], (sheetName === 'ER'))
         ];
     }
 

@@ -25,6 +25,7 @@ export default class Contact {
         this.paperCard = false;
         this.annulReport = false;
         this.annulReceipt = false;
+        this.er = false;
     }
 
     static fromObject(object) {
@@ -52,6 +53,7 @@ export default class Contact {
         result.addPaperCard(object.paperCard);
         result.addAnnulReport(object.annualReport);
         result.addAnnulReceipt(object.annualReceipt);
+        result.addEr(object.er);
 
         return result;
     }
@@ -123,19 +125,8 @@ export default class Contact {
         );
     }
 
-    get nameAddressList() {
-        const name = this.name;
-        let result = [];
-
-        if (!name) {
-            return result;
-        }
-
-        for (let address of this.addresses) {
-            result.push(`${this.name}/${address}`);
-        }
-
-        return result;
+    addEr(er) {
+        this.er = (this.er || er || false);
     }
 
     merge(other) {
@@ -157,6 +148,7 @@ export default class Contact {
         result.addPaperCard(other.paperCard);
         result.addAnnulReport(other.annulReport);
         result.addAnnulReceipt(other.annulReceipt);
+        result.addEr(other.er);
 
         return result;
     }
