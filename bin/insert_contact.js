@@ -238,5 +238,8 @@ function writeLogs(logs) {
 const wb = XLSX.readFile(process.argv[2]);
 const result = mergeRows(parseSheets(wb.Sheets));
 
-generateOutput(result, process.argv[3] || './output.xlsx');
+generateOutput(
+    result.sort((a, b) => ([...a.identities][0] > [...b.identities][0])),
+    process.argv[3] || './output.xlsx'
+);
 writeLogs(logs);
