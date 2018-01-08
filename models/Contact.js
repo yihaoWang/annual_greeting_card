@@ -26,6 +26,8 @@ export default class Contact {
         this.annulReport = false;
         this.annulReceipt = false;
         this.er = false;
+
+        this._count = 1;
     }
 
     static fromObject(object) {
@@ -130,6 +132,7 @@ export default class Contact {
     }
 
     merge(other) {
+        this._count++;
         let result = clone(this);
 
         if (!result.email) {
@@ -165,6 +168,7 @@ export default class Contact {
             paperCard: this.paperCard ? 'Y' : 'N',
             annulReport: this.annulReport ? 'Y' : 'N',
             annulReceipt: this.annulReceipt ? 'Y' : 'N',
+            count: this._count,
         };
     }
 }
