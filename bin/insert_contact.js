@@ -106,7 +106,8 @@ function parseSheet(ws, isEr) {
 function mergeRows(rows) {
     const numRows = rows.length;
     let nameLookup = {},
-        noNameRows = [];
+        noNameRows = [],
+        mergeCount = 0;
 
     for (let i = 0; i < numRows; i++) {
         const row = rows[i];
@@ -168,14 +169,17 @@ function mergeRows(rows) {
         const mergedRow = matchRows[mergedIndex];
 
         if (mergedRow) {
-            logs.push(`${mergeReason}: ${JSON.stringify(row.toJSON())} ${JSON.stringify(mergedRow.toJSON())}`);
+            mergeCount++;
             matchRows[mergedIndex] = mergedRow.merge(row);
+
+            logs.push(`${mergeReason}: ${JSON.stringify(row.toJSON())} ${JSON.stringify(mergedRow.toJSON())}`);
         } else {
             matchRows[mergedIndex] = row;
         }
 
         nameLookup[name] = matchRows;
     }
+    console.log(`${mergeCount} rows are merged`);
 
     return noNameRows.concat.apply(noNameRows, Object.values(nameLookup));
 }
@@ -194,11 +198,9 @@ function parseSheets(sheets) {
     return result;
 }
 
-function generateOutput(rows, outputName) {
-    const outputWS = XLSX.utils.json_to_sheet(
-        rows.map((row) => (
-            row.toJSON()
-        )),
+function createSheet(rows) {
+    return XLSX.utils.json_to_sheet(
+        rows.map((row) => (row.toJSON())),
         { header: [
             'identities',
             'email',
@@ -212,10 +214,14 @@ function generateOutput(rows, outputName) {
             'annulReceipt'
         ]}
     );
+}
+
+function generateOutput(rows, outputName) {
     const outputWB = {
-        SheetNames: ['all'],
+        SheetNames: ['ER','Other'],
         Sheets: {
-            all: outputWS
+            ER: createSheet(rows.filter((row) => (row.er))),
+            Other: createSheet(rows.filter((row) => (!row.er))),
         }
     };
 
