@@ -125,7 +125,7 @@ function mergeRows(rows) {
             continue;
         }
 
-        const email = row.email;
+        const email = row.email ? row.email.toLowerCase() : row.email;
         const address = (row.addresses.size === 0) ? null : [...row.addresses][0];
         const er = row.er;
         const numMatchRows = matchRows.length;
@@ -134,7 +134,7 @@ function mergeRows(rows) {
             mergeReason;
         for (let j = 0; j < numMatchRows; j++) {
             const matchRow = matchRows[j];
-            const matchRowEmail = matchRow.email;
+            const matchRowEmail = matchRow.email ? matchRow.email.toLowerCase() : matchRow.email;
             const matchRowAddresses = matchRow.addresses;
             const matchRowEr = matchRow.er;
 
